@@ -20,12 +20,13 @@ function PostList() {
     return searchTerm || '';
   };
 
-  const [searchTerm] = useState(loadInitialSearchTerm());
+  const [searchTerm, setSearchTerm] = useState(loadInitialSearchTerm());
 
   const handleRefreshState = () => {
     setSearchQuery('');
     setRefreshState(!refreshState);
     localStorage.removeItem('searchQuery');
+    setSearchTerm('');
   };
 
   const handleDeletePost = (postId) => {
