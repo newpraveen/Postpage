@@ -1,0 +1,32 @@
+/* App.css */
+
+/* You can keep or modify .App-header styles to match your design */
+.App-header {
+  background-color: #2196F3; /* Change to your preferred background color */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem; /* Adjust font size as needed */
+  color: white;
+}
+
+.delete-button {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.delete-button:hover {
+  background-color: #d32f2f;
+}
+
+/* Add your custom styles here */
+/* For example, you can define styles for elements in the PostManagement component */
+/* .post-title {
+   font-size: 2rem;
+   color: #333;
+ } */
