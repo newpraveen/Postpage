@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Card, CardContent, Typography } from '@mui/material';
 import DeleteButton from './DeleteButton';
-import CommentDialog from './CommentDialog'; // Make sure the path is correct
+import CommentDialog from './CommentDialog';
 
 function PostList() {
   const [posts, setPosts] = useState([]);
-  const [selectedPost, setSelectedPost] = useState(null); // Define selectedPost state
-  const [comments, setComments] = useState([]); // Define comments state
-  const [openDialog, setOpenDialog] = useState(false); // Define openDialog state
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [openDialog, setOpenDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredPosts, setFilteredPosts] = useState([]);
   const [refreshState, setRefreshState] = useState(false);
@@ -19,30 +19,27 @@ function PostList() {
     const searchTerm = localStorage.getItem('searchTerm');
     return searchTerm || '';
   };
+
   const [searchTerm] = useState(loadInitialSearchTerm());
 
-  // Define the missing functions
   const handleRefreshState = () => {
-    setRefreshState(true);
-    setFilteredPosts([]);
     setSearchQuery('');
+    setRefreshState(!refreshState);
     localStorage.removeItem('searchQuery');
   };
 
   const handleDeletePost = (postId) => {
-    // Create a new array of posts excluding the deleted post
     const updatedPosts = posts.filter((post) => post.id !== postId);
     setPosts(updatedPosts);
+    handleRemoveFromDeleteQueue(postId);
   };
 
   const handleAddToDeleteQueue = (postId) => {
-    // Add the postId to the deleteQueue
     setDeleteQueue([...deleteQueue, postId]);
     setDeleteQueueCount(deleteQueue.length + 1);
   };
 
   const handleRemoveFromDeleteQueue = (postId) => {
-    // Remove the postId from the deleteQueue
     const updatedDeleteQueue = deleteQueue.filter((id) => id !== postId);
     setDeleteQueue(updatedDeleteQueue);
     setDeleteQueueCount(updatedDeleteQueue.length);
@@ -53,7 +50,6 @@ function PostList() {
       console.log(`Deleted post with ID ${postId}`);
     });
 
-    // Clear the delete queue
     setDeleteQueue([]);
     setDeleteQueueCount(0);
   };
@@ -91,7 +87,6 @@ function PostList() {
   }, [refreshState]);
 
   useEffect(() => {
-    // Filter posts based on the search query
     const filtered = posts.filter((post) => {
       return (
         post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -100,30 +95,22 @@ function PostList() {
     });
     setFilteredPosts(filtered);
 
-    // Save search query to local storage
     localStorage.setItem('searchQuery', searchQuery);
-  }, [searchQuery, posts]);
-
-  useEffect(() => {
     localStorage.setItem('searchTerm', searchTerm);
-  }, [searchTerm]);
+  }, [searchQuery, searchTerm, posts]);
 
-  // Define the function to open the dialog
   const handlePostClick = (post) => {
     setSelectedPost(post);
-    // Fetch comments when a post is clicked
     axios
       .get(`https://jsonplaceholder.typicode.com/posts/${post.id}/comments`)
       .then((response) => {
         setComments(response.data);
-        setOpenDialog(true); // Open the dialog
+        setOpenDialog(true);
       })
       .catch((error) => {
         console.error('Error fetching comments:', error);
       });
   };
-
-  // Rest of your code remains the same
 
   return (
     <div className="post-list">
@@ -154,14 +141,14 @@ function PostList() {
               <button onClick={() => handleRemoveFromDeleteQueue(post.id)}>Remove from Queue</button>
             )}
           </div>
-          {selectedPost && post.id === selectedPost.id && ( // Add this condition
-      <CommentDialog
-        open={openDialog}
-        onClose={() => setOpenDialog(false)}
-        comments={comments}
-        post={selectedPost}
-      />
-    )}
+          {selectedPost && post.id === selectedPost.id && (
+            <CommentDialog
+              open={openDialog}
+              onClose={() => setOpenDialog(false)}
+              comments={comments}
+              post={selectedPost}
+            />
+          )}
         </Card>
       ))}
 
@@ -170,15 +157,6 @@ function PostList() {
           <button onClick={handleRefreshQueue}>Process Delete Queue</button>
           <p>Delete Queue Count: {deleteQueueCount}</p>
         </div>
-      )}
-
-      {selectedPost && (
-        <CommentDialog
-          open={openDialog}
-          onClose={() => setOpenDialog(false)}
-          comments={comments}
-          post={selectedPost}
-        />
       )}
     </div>
   );
