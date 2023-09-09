@@ -15,42 +15,68 @@ function PostList() {
   const [deleteQueue, setDeleteQueue] = useState([]);
   const [deleteQueueCount, setDeleteQueueCount] = useState(0);
 
-  const loadInitialSearchTerm = () => {
-    const searchTerm = localStorage.getItem('searchTerm');
-    return searchTerm || '';
+  useEffect(() => {
+    // Load posts from the API on initial component mount
+    axios
+      .get('https://jsonplaceholder.typicode.com/posts')
+      .then((response) => {
+        setPosts(response.data);
+      })
+      .catch((error) => {
+        console.error('Error fetching posts:', error);
+      });
+
+    // Load delete queue from state
+
+    // Load search query from URL parameter
+    const urlSearchParams = new URLSearchParams(window.location.search);
+    const savedSearchQuery = urlSearchParams.get('searchQuery') || '';
+    setSearchQuery(savedSearchQuery);
+  }, []);
+
+  const updateURL = (query) => {
+    const urlSearchParams = new URLSearchParams();
+    if (query) {
+      urlSearchParams.set('searchQuery', query);
+    } else {
+      urlSearchParams.delete('searchQuery');
+    }
+    window.history.replaceState({}, '', `${window.location.pathname}?${urlSearchParams.toString()}`);
   };
 
-  const [searchTerm, setSearchTerm] = useState(loadInitialSearchTerm());
+  const urlSearchParams = new URLSearchParams(window.location.search);
+    const savedDeleteQueue = urlSearchParams.get('deleteQueue');
+    if (savedDeleteQueue) {
+      setDeleteQueue(savedDeleteQueue.split(',').map(Number));
+      setDeleteQueueCount(savedDeleteQueue.split(',').length);
+    }
 
   const handleRefreshState = () => {
     setSearchQuery('');
     setRefreshState(!refreshState);
-    localStorage.removeItem('searchQuery');
-    setSearchTerm('');
   };
 
   const handleDeletePost = (postId) => {
-    const updatedPosts = posts.filter((post) => post.id !== postId);
-    setPosts(updatedPosts);
-    handleRemoveFromDeleteQueue(postId);
-  };
-
-  const handleAddToDeleteQueue = (postId) => {
-    setDeleteQueue([...deleteQueue, postId]);
-    setDeleteQueueCount(deleteQueue.length + 1);
-  };
-
-  const handleRemoveFromDeleteQueue = (postId) => {
-    const updatedDeleteQueue = deleteQueue.filter((id) => id !== postId);
+    // Add the postId to the delete queue
+    const updatedDeleteQueue = [...deleteQueue, postId];
     setDeleteQueue(updatedDeleteQueue);
     setDeleteQueueCount(updatedDeleteQueue.length);
+
+    // Remove the post from the filteredPosts
+    setFilteredPosts(filteredPosts.filter((post) => post.id !== postId));
+
+    // Update URL with the current deleteQueue
+    updateURL(searchQuery, updatedDeleteQueue);
   };
+
 
   const handleRefreshQueue = () => {
     deleteQueue.forEach((postId) => {
+      // Send DELETE API request here to delete the post
       console.log(`Deleted post with ID ${postId}`);
     });
 
+    // Clear the delete queue
     setDeleteQueue([]);
     setDeleteQueueCount(0);
   };
@@ -70,24 +96,6 @@ function PostList() {
   }, [refreshState]);
 
   useEffect(() => {
-    if (!refreshState) {
-      axios
-        .get('https://jsonplaceholder.typicode.com/posts')
-        .then((response) => {
-          setPosts(response.data);
-        })
-        .catch((error) => {
-          console.error('Error fetching posts:', error);
-        });
-    }
-
-    const storedSearchQuery = localStorage.getItem('searchQuery');
-    if (storedSearchQuery) {
-      setSearchQuery(storedSearchQuery);
-    }
-  }, [refreshState]);
-
-  useEffect(() => {
     const filtered = posts.filter((post) => {
       return (
         post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -96,9 +104,9 @@ function PostList() {
     });
     setFilteredPosts(filtered);
 
-    localStorage.setItem('searchQuery', searchQuery);
-    localStorage.setItem('searchTerm', searchTerm);
-  }, [searchQuery, searchTerm, posts]);
+    // Update URL with the current search query
+    updateURL(searchQuery);
+  }, [searchQuery, posts]);
 
   const handlePostClick = (post) => {
     setSelectedPost(post);
@@ -130,17 +138,9 @@ function PostList() {
             <Typography variant="h5">{post.title}</Typography>
             <Typography variant="body2">{post.body}</Typography>
           </CardContent>
-          <DeleteButton
-            onClick={() => {
-              handleDeletePost(post.id);
-              handleAddToDeleteQueue(post.id);
-            }}
-          />
+          <DeleteButton onClick={() => handleDeletePost(post.id)} />
           <div>
             <button onClick={() => handlePostClick(post)}>View Comments</button>
-            {deleteQueue.includes(post.id) && (
-              <button onClick={() => handleRemoveFromDeleteQueue(post.id)}>Remove from Queue</button>
-            )}
           </div>
           {selectedPost && post.id === selectedPost.id && (
             <CommentDialog
